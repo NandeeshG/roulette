@@ -2,44 +2,38 @@
 #include "logger.h"
 #include "pub_sub.h"
 
-using namespace casino;
+namespace casino {
+namespace wheel {
 
-class Wheel : public pub_sub::Publisher {
-private:
-    std::set<pub_sub::Subscriber*> mySubscribers;
-    std::thread worker_thread;
-    logger::Logger myLogger;
-
-public:
-    Wheel()
+    Wheel::Wheel()
     {
         myLogger = logger::Logger("Wheel");
     }
 
-    void subscribe(pub_sub::Subscriber* s)
+    void Wheel::subscribe(pub_sub::Subscriber* s)
     {
         mySubscribers.insert(s);
     }
 
-    void unsubscribe(pub_sub::Subscriber* s)
+    void Wheel::unsubscribe(pub_sub::Subscriber* s)
     {
         if (mySubscribers.count(s))
             mySubscribers.erase(s);
     }
 
-    void publish(pub_sub::Event e)
+    void Wheel::publish(pub_sub::Event e)
     {
         for (pub_sub::Subscriber* s : mySubscribers) {
             s->accept(e);
         }
     }
 
-    void start()
+    void Wheel::start()
     {
         worker_thread = std::thread([this] { _start(); });
     }
 
-    void _start()
+    void Wheel::_start()
     {
         int t = 100;
         while (t--) {
@@ -51,8 +45,9 @@ public:
         }
     }
 
-    void wait()
+    void Wheel::wait()
     {
         worker_thread.join();
     }
-};
+} // namespace wheel
+} // namespace casino

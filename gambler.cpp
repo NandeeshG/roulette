@@ -2,37 +2,32 @@
 #include "logger.h"
 #include "pub_sub.h"
 
-using namespace casino;
+namespace casino {
+namespace gambler {
 
-class Gambler : public pub_sub::Subscriber {
-private:
-    int mGamblerId;
-    pub_sub::Publisher* mPublisher;
-    logger::Logger myLogger;
+    int Gambler::GAMBLER_COUNT = 0;
 
-    static int GAMBLER_COUNT;
-
-public:
-    Gambler(pub_sub::Publisher* pub)
+    Gambler::Gambler(pub_sub::Publisher* pub)
         : mGamblerId(GAMBLER_COUNT++)
     {
         mPublisher = pub;
         myLogger = logger::Logger("Gambler" + std::to_string(mGamblerId));
     }
 
-    void start_subscription()
+    void Gambler::start_subscription()
     {
         mPublisher->subscribe(this);
     }
 
-    void stop_subscription()
+    void Gambler::stop_subscription()
     {
         mPublisher->unsubscribe(this);
     }
 
-    void accept(pub_sub::Event e)
+    void Gambler::accept(pub_sub::Event e)
     {
         myLogger.warning("Gambler: ", mGamblerId, " received event: ", e.event_type);
     }
-};
-int Gambler::GAMBLER_COUNT = 0;
+
+} // namespace gambler
+} // namespace casino
