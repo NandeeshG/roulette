@@ -23,12 +23,6 @@ int main()
 
     g1.start_subscription();
     g2.start_subscription();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-    g1.stop_subscription();
-    g2.stop_subscription();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-    g1.start_subscription();
-    g2.start_subscription();
 
     w.wait();
 

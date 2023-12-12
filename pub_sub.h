@@ -9,16 +9,19 @@ namespace pub_sub {
     enum EventType {
         ROLLING,
         BETTING,
-        DISPENSING
+        DISPENSING,
+        MONEY_WON
     };
 
     class Event {
     public:
         time_t live_till;
         EventType event_type;
-        Event(time_t lt, EventType et)
+        float data;
+        Event(time_t lt, EventType et, float dt)
             : live_till(lt)
             , event_type(et)
+            , data(dt)
         {
         }
     };

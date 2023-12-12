@@ -2,57 +2,68 @@
 #define CASINO_LOGGER_H
 
 #include <iostream>
+#include <map>
 #include <string>
+#include <utility>
 
 namespace casino {
 namespace logger {
 
-    enum Level {
-        DEBUG,
-        INFO,
-        WARNING,
+    enum COLOR {
+        BOLD_RED,
+        RED,
+        YELLOW,
+        GREEN,
+        WHITE
+    };
+
+    enum LEVEL {
+        SEVERE,
         ERROR,
-        SEVERE
+        WARNING,
+        INFO,
+        DEBUG,
     };
 
     class Logger {
     private:
-        std::string mName;
-        Level mLogLevel;
+        static const std::map<LEVEL, std::string> LEVEL_NAME_MAP;
+        static const std::map<LEVEL, COLOR> LEVEL_COLOR_MAP;
+        static const std::map<COLOR, std::pair<int, int>> COLOR_VALUE_MAP;
 
-        std::string get_timestamp()
+        std::string myName;
+        LEVEL myLogLevel;
+
+        std::string _timestamp_string()
         {
-            time_t time_now = time(NULL);
-            char time_str[100];
-            strftime(time_str, sizeof(time_str), "%Y%m%d:%T:%Z", localtime(&time_now));
-            return std::string(time_str);
+            time_t timeNow = time(NULL);
+            char timeStr[100];
+            strftime(timeStr, sizeof(timeStr), "%Y%m%d:%T:%Z", localtime(&timeNow));
+            return std::string(timeStr);
         }
 
-        std::string bold_red(std::string pStr)
+        std::string _colored_string(COLOR color, std::string pStr)
         {
-            return "\033[1;41m" + pStr + "\033[0m";
-        }
-
-        std::string red(std::string pStr)
-        {
-            return "\033[0;31m" + pStr + "\033[0m";
-        }
-
-        std::string yellow(std::string pStr)
-        {
-            return "\033[0;33m" + pStr + "\033[0m";
-        }
-
-        std::string green(std::string pStr)
-        {
-            return "\033[0;32m" + pStr + "\033[0m";
+            std::pair<int, int> colorPair;
+            try {
+                colorPair = COLOR_VALUE_MAP.at(color);
+            } catch (std::string err) {
+                return pStr;
+            }
+            return "\033["
+                + std::to_string(colorPair.first)
+                + ";"
+                + std::to_string(colorPair.second)
+                + "m"
+                + pStr
+                + "\033[0m";
         }
 
         template <typename... T>
-        void m_print(std::string pLevel, T... pStrs)
+        void _f_print(std::string pLevel, T... pStrs)
         {
-            std::cout << '[' << get_timestamp() << ']'
-                      << '[' << mName << ']'
+            std::cout << '[' << _timestamp_string() << ']'
+                      << '[' << myName << ']'
                       << '[' << pLevel << ']'
                       << ':';
             (void)(int[]) { (std::cout << pStrs << ' ', 0)... };
@@ -62,65 +73,71 @@ namespace logger {
     public:
         Logger()
         {
-            mName = "unknown";
-            mLogLevel = WARNING;
+            myName = "unknown";
+            myLogLevel = WARNING;
         }
 
         Logger(std::string pName)
-            : mName(pName)
+            : myName(pName)
         {
-            mLogLevel = WARNING;
+            myLogLevel = WARNING;
         }
 
-        Logger(std::string pName, Level pLogLevel)
-            : mName(pName)
-            , mLogLevel(pLogLevel)
+        Logger(std::string pName, LEVEL pLogLevel)
+            : myName(pName)
+            , myLogLevel(pLogLevel)
         {
         }
 
         std::string getName()
         {
-            return mName;
+            return myName;
         }
 
-        void setLogLevel(Level pLogLevel)
+        void setLogLevel(LEVEL pLogLevel)
         {
-            mLogLevel = pLogLevel;
+            myLogLevel = pLogLevel;
+        }
+
+        template <typename... Args>
+        void log(LEVEL logLevel, Args... pStrs)
+        {
+            if (myLogLevel <= logLevel) {
+                _f_print(_colored_string(
+                             LEVEL_COLOR_MAP.at(logLevel),
+                             LEVEL_NAME_MAP.at(logLevel)),
+                    pStrs...);
+            }
         }
 
         template <typename... Args>
         void debug(Args... pStrs)
         {
-            if (mLogLevel <= DEBUG)
-                m_print(green("DEBUG"), pStrs...);
+            log(DEBUG, pStrs...);
         }
 
         template <typename... Args>
         void info(Args... pStrs)
         {
-            if (mLogLevel <= INFO)
-                m_print("INFO", pStrs...);
+            log(INFO, pStrs...);
         }
 
         template <typename... Args>
         void warning(Args... pStrs)
         {
-            if (mLogLevel <= WARNING)
-                m_print(yellow("WARNING"), pStrs...);
+            log(WARNING, pStrs...);
         }
 
         template <typename... Args>
         void error(Args... pStrs)
         {
-            if (mLogLevel <= ERROR)
-                m_print(red("ERROR"), pStrs...);
+            log(ERROR, pStrs...);
         }
 
         template <typename... Args>
         void severe(Args... pStrs)
         {
-            if (mLogLevel <= SEVERE)
-                m_print(bold_red("SEVERE"), pStrs...);
+            log(SEVERE, pStrs...);
         }
     };
 

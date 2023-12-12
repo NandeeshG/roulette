@@ -11,7 +11,8 @@ Entities:
         ii. Betting - takes 15 seconds
         iii. Dispensing - takes 7 seconds
     c. Allows up to 5 users to join the table and place bets.
-        i. Users can enter the table any time they want. They can leave only when no bet is placed by them.
+        i. Users can enter the table any time they want. 
+           They can leave only when no bet is placed by them.
     d. For now allows only straight up bets but we can allow more in future.
     
 2. user
@@ -36,13 +37,44 @@ LLD: public interfaces
     Once object is constructed and a thread is started with the wheel going in cycle.
     The wheel stops only on object destruction.
     The main thread is free to allow handling pub-sub and place-bets request.
-    Every event sent shall also have a timestamp telling till what time it will be in that state.
+    Every event sent shall also have a timestamp telling till what time it will 
+    be in that state.
 2. Gambler: inherits from PubSub::Subscriber
     Once object is constructed, it waits for subscribing to some wheel.
     Only one wheel can be subscribed at a time.
-    Once subscribed to wheel it prompts user to place bet with a visible timer as provided by the wheel.
+    Once subscribed to wheel it prompts user to place bet with a visible timer 
+    as provided by the wheel.
 3. Logger:
     While constructor, takes the class name and stores it in pvt member.
     Exposes different functions as per the levels.
 4. PubSub: 
     header only file that defines the pub-sub methods to implement.
+
+
+Naming conventions followed:
+1. private variables named in camel case starting with 'my'
+2. static variables named in camel case starting with 'our'
+3. public variables named in camel case
+4. private method names start with '_'
+5. constant variables in snake case all capitals.
+
+
+Event switching and tasks:
+1. Rolling wheel
+    -> No bets allowed
+    -> Roll takes 8 seconds
+    -> Random number selected to win
+    -> The winning number is broadcasted
+    -> Switch to Dispensing
+2. Dispensing money 
+    -> No bets allowed
+    -> Dispensing takes 7 seconds
+    -> for losers their money is added to wheel pool
+    -> for winners, the wheel gives them money 
+    -> Winners are sent event with the money they made
+    -> Switch to rolling
+3. Betting money
+    -> Bets open
+    -> Lasts for 15 seconds
+    -> Anyone can place any amount of money (even floating point)
+    -> Switch to rolling
