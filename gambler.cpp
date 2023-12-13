@@ -58,8 +58,8 @@ namespace gambler {
     void Gambler::account_win(pub_sub::Event e)
     {
         myStrategy->get_stats().print();
-        myLogger.warning(log_prefix("has won: " + std::to_string(e.double_data)));
         myMoney += e.double_data;
+        myLogger.warning(log_prefix("has won: " + std::to_string(e.double_data) + " with total money " + std::to_string(myMoney)));
     }
 
     void Gambler::auto_place_bet()

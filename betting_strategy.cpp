@@ -3,6 +3,7 @@
 #include "pub_sub.h"
 
 #include <cstdlib>
+#include <math.h>
 #include <numeric>
 #include <utility>
 
@@ -189,7 +190,8 @@ namespace betting_strategy {
             std::cout << "Stats: "
                       << "After starting with " << getStartingMoney() << "rs, "
                       << "in " << getRoundsPlayed() << " rounds, "
-                      << "we won total of " << getMoneyWon() << ". "
+                      << "we won total of " << getMoneyWon() << ", "
+                      << "by placing bets totalling " << getTotalBetAmount() << ". "
                       << "With an ROI of " << getROIPercentage() << "% "
                       << "we are now standing with " << getTotalMoney()
                       << std::endl;
@@ -218,10 +220,10 @@ namespace betting_strategy {
         // Same number to bet
         if (s.getRoundsPlayed() == 0 || s.getTotalBetAmount() == lastTotalBetAmount) {
             number = LUCKY_NUMBER;
-            bet_amount = 0.1 * s.getStartingMoney();
+            bet_amount = ceil(0.1 * s.getStartingMoney());
         } else {
             number = s.getLastBetNumber();
-            bet_amount = (s.getTotalBetAmount() - lastTotalBetAmount) / (double)STRAIGHT_UP_WIN_RETURNS;
+            bet_amount = ceil((s.getTotalBetAmount() - lastTotalBetAmount) / (double)(STRAIGHT_UP_WIN_RETURNS)) + 0.01 * s.getStartingMoney();
         }
 
         return { number, bet_amount };
