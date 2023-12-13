@@ -1,4 +1,5 @@
 #include "wheel.h"
+#include "betting_strategy.h"
 #include "logger.h"
 #include "pub_sub.h"
 
@@ -10,72 +11,90 @@ namespace wheel {
     void Wheel::_rolling()
     {
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + 8, pub_sub::ROLLING, 0 };
+        pub_sub::Event ev { timeNow + ROLL_TIME_MS / 1000, pub_sub::ROLLING };
         _switch_to(ev);
         myLogger.info("starting rolling");
-        std::this_thread::sleep_for(std::chrono::milliseconds(8000));
+        int t = ROLL_TIME_MS;
+        std::this_thread::sleep_for(std::chrono::milliseconds(t));
+        myWinningNumber = (rand() % (MAX_NUM - MIN_NUM + 1)) + MIN_NUM;
         myLogger.info("stopped rolling");
     }
 
     void Wheel::_dispensing()
     {
+        int t = DISPENSE_TIME_MS;
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + 7, pub_sub::DISPENSING, 0 };
+        pub_sub::Event ev { timeNow + DISPENSE_TIME_MS / 1000, pub_sub::DISPENSING, "winning-number in integer-data", myWinningNumber, 0 };
         _switch_to(ev);
         myLogger.info("dispensing winnings");
-        std::this_thread::sleep_for(std::chrono::milliseconds(7000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(t / 2));
+        for (auto sub_bet : myBets[myWinningNumber]) {
+            double winningAmount = sub_bet.second * 1ll * (MAX_NUM - MIN_NUM);
+            pub_sub::Event winEv { 0, pub_sub::MONEY_WON, "winning-data", myWinningNumber, winningAmount };
+            sub_bet.first->accept(winEv);
+        }
+        // TODO: For all other who lost, publish event of all the money lost from table for them. (in +ve value)
+        std::this_thread::sleep_for(std::chrono::milliseconds(t / 2));
         myLogger.info("winnings dispensed");
     }
 
     void Wheel::_betting()
     {
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + 15, pub_sub::BETTING, 0 };
+        pub_sub::Event ev { timeNow + BET_TIME_MS / 1000, pub_sub::BETTING };
+        int t = BET_TIME_MS;
         _switch_to(ev);
         myLogger.info("betting is open now");
-        std::this_thread::sleep_for(std::chrono::milliseconds(15000));
-        myLogger.info("betting closed`");
+        std::this_thread::sleep_for(std::chrono::milliseconds(t));
+        myLogger.info("betting closed");
     }
 
     void Wheel::_start()
     {
         while (true) {
+            if (!run_loop) {
+                myLogger.debug("run_loop false");
+                return;
+            }
             _betting();
             _rolling();
             _dispensing();
         }
-        // int et = rand() % 3;
-        // pub_sub::Event e = pub_sub::Event(0, pub_sub::EventType(et), 0);
-        // myLogger.warning("publishing event type: ", e.event_type);
-        // publish(e);
     }
 
     void Wheel::_switch_to(pub_sub::Event event)
     {
         // TODO: We should add mutex usage here
-        myCurrentState = event.event_type;
+        myCurrentState = event;
+        myEventLog.push_back(event);
         publish(event);
     }
 
     Wheel::Wheel()
     {
         myLogger = logger::Logger("Wheel");
+        run_loop = false;
+        srand(time(NULL));
+        myMoney = INITIAL_WHEEL_MONEY;
     }
 
     Wheel::~Wheel()
     {
-        worker_thread.~thread();
+        if (worker_thread.joinable())
+            worker_thread.~thread();
     }
 
-    bool Wheel::place_bet(pub_sub::Subscriber* gambler, int num, int amt)
+    bool Wheel::place_bet(pub_sub::Subscriber* gambler, betting_strategy::t_bet bet)
     {
+        int num = bet.first;
+        double amt = bet.second;
         if (players_at_table.find(gambler) == players_at_table.end()) {
             if (players_at_table.size() == MAX_PLAYER) {
-                myLogger.error("can't take bets of more than 5 players at once");
+                myLogger.error("can't take bets of more than ", MAX_PLAYER, " players at once");
                 return false;
             }
         }
-        if (myCurrentState != pub_sub::BETTING) {
+        if (myCurrentState.event_type != pub_sub::BETTING) {
             myLogger.warning("can't take bets right now");
             return false;
         }
@@ -105,6 +124,11 @@ namespace wheel {
         return true;
     }
 
+    bool Wheel::taking_bets()
+    {
+        return myCurrentState.event_type == pub_sub::BETTING;
+    }
+
     void Wheel::subscribe(pub_sub::Subscriber* s)
     {
         mySubscribers.insert(s);
@@ -125,11 +149,15 @@ namespace wheel {
 
     void Wheel::start()
     {
+        myLogger.debug("starting thread");
+        run_loop = true;
         worker_thread = std::thread([this] { _start(); });
     }
 
-    void Wheel::wait()
+    void Wheel::stop()
     {
+        myLogger.debug("stopping thread");
+        run_loop = false;
         worker_thread.join();
     }
 } // namespace wheel

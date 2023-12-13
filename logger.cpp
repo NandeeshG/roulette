@@ -7,28 +7,30 @@
 namespace casino {
 namespace logger {
 
+    LEVEL GLOBAL_DEFAULT_LOG_LEVEL = WARNING;
+
     const std::map<COLOR, std::pair<int, int>> Logger::COLOR_VALUE_MAP = {
-        { BOLD_RED, { 1, 41 } },
-        { RED, { 0, 31 } },
-        { YELLOW, { 0, 33 } },
+        { GREEN, { 0, 32 } },
         { WHITE, { 0, 30 } },
-        { GREEN, { 0, 32 } }
+        { YELLOW, { 0, 33 } },
+        { RED, { 0, 31 } },
+        { BOLD_RED, { 1, 41 } }
     };
 
     const std::map<LEVEL, COLOR> Logger::LEVEL_COLOR_MAP = {
-        { SEVERE, BOLD_RED },
-        { ERROR, RED },
-        { WARNING, YELLOW },
+        { DEBUG, GREEN },
         { INFO, WHITE },
-        { DEBUG, GREEN }
+        { WARNING, YELLOW },
+        { ERROR, RED },
+        { SEVERE, BOLD_RED }
     };
 
     const std::map<LEVEL, std::string> Logger::LEVEL_NAME_MAP = {
-        { SEVERE, "SEVERE" },
-        { ERROR, "ERROR" },
-        { WARNING, "WARN" },
+        { DEBUG, "DEBUG" },
         { INFO, "INFO" },
-        { DEBUG, "DEBUG" }
+        { WARNING, "WARN" },
+        { ERROR, "ERROR" },
+        { SEVERE, "SEVERE" }
     };
 
 }

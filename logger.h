@@ -10,20 +10,22 @@ namespace casino {
 namespace logger {
 
     enum COLOR {
-        BOLD_RED,
-        RED,
-        YELLOW,
         GREEN,
-        WHITE
+        WHITE,
+        YELLOW,
+        RED,
+        BOLD_RED
     };
 
     enum LEVEL {
-        SEVERE,
-        ERROR,
-        WARNING,
-        INFO,
         DEBUG,
+        INFO,
+        WARNING,
+        ERROR,
+        SEVERE
     };
+
+    extern LEVEL GLOBAL_DEFAULT_LOG_LEVEL;
 
     class Logger {
     private:
@@ -32,7 +34,8 @@ namespace logger {
         static const std::map<COLOR, std::pair<int, int>> COLOR_VALUE_MAP;
 
         std::string myName;
-        LEVEL myLogLevel;
+        bool myUseOverriddenLogLevel;
+        LEVEL myOverriddenLogLevel;
 
         std::string _timestamp_string()
         {
@@ -72,20 +75,21 @@ namespace logger {
 
     public:
         Logger()
+            : myName("unknown")
+            , myUseOverriddenLogLevel(false)
         {
-            myName = "unknown";
-            myLogLevel = WARNING;
         }
 
         Logger(std::string pName)
             : myName(pName)
+            , myUseOverriddenLogLevel(false)
         {
-            myLogLevel = WARNING;
         }
 
         Logger(std::string pName, LEVEL pLogLevel)
             : myName(pName)
-            , myLogLevel(pLogLevel)
+            , myUseOverriddenLogLevel(true)
+            , myOverriddenLogLevel(pLogLevel)
         {
         }
 
@@ -96,13 +100,25 @@ namespace logger {
 
         void setLogLevel(LEVEL pLogLevel)
         {
-            myLogLevel = pLogLevel;
+            myUseOverriddenLogLevel = true;
+            myOverriddenLogLevel = pLogLevel;
+        }
+
+        void resetLogLevel()
+        {
+            myUseOverriddenLogLevel = false;
         }
 
         template <typename... Args>
         void log(LEVEL logLevel, Args... pStrs)
         {
-            if (myLogLevel <= logLevel) {
+            LEVEL lvlToUse;
+            if (myUseOverriddenLogLevel)
+                lvlToUse = myOverriddenLogLevel;
+            else
+                lvlToUse = GLOBAL_DEFAULT_LOG_LEVEL;
+
+            if (lvlToUse <= logLevel) {
                 _f_print(_colored_string(
                              LEVEL_COLOR_MAP.at(logLevel),
                              LEVEL_NAME_MAP.at(logLevel)),
@@ -138,6 +154,14 @@ namespace logger {
         void severe(Args... pStrs)
         {
             log(SEVERE, pStrs...);
+            exit(100 + SEVERE);
+        }
+
+        template <typename... Args>
+        void severe(int errorCode, Args... pStrs)
+        {
+            log(SEVERE, pStrs...);
+            exit(errorCode);
         }
     };
 
