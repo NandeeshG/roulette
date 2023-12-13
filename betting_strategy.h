@@ -92,11 +92,15 @@ namespace betting_strategy {
         double getStartingMoney();
         double getTotalMoney();
         double getROIPercentage();
+
+        void print(int lvl = 0);
     };
 
     class Strategy {
     public:
+        // TODO: make get_stats non-virtual
         virtual Stats get_stats() = 0;
+
         virtual std::pair<int, double> get_next_bet() = 0;
         virtual void accept(pub_sub::Event) = 0;
     };
@@ -106,12 +110,14 @@ namespace betting_strategy {
      * Bets 1/10th of starting money on the LUCKY NUMBER.
      * Then bets the amount required to recover money bet
      *  till then on the same LUCKY NUMBER.
+     * Once money is recovered, begins again with 1/10th of starting money.
      */
     class RecoverBetMoneyStrategy : public Strategy {
     private:
         Stats s;
         static const int STRAIGHT_UP_WIN_RETURNS = 35;
         static const int LUCKY_NUMBER = 20;
+        double lastTotalBetAmount;
 
     public:
         RecoverBetMoneyStrategy(double start_money);

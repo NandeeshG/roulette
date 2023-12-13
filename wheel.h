@@ -17,9 +17,9 @@ namespace wheel {
 
     class Wheel : public pub_sub::Publisher {
     private:
-        static const int ROLL_TIME_MS = 50;
-        static const int BET_TIME_MS = 50;
-        static const int DISPENSE_TIME_MS = 50;
+        static const int ROLL_TIME_MS = 20;
+        static const int BET_TIME_MS = 20;
+        static const int DISPENSE_TIME_MS = 20;
 
         static constexpr double INITIAL_WHEEL_MONEY = 10000000; // 1crore
 

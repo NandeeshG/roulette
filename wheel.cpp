@@ -28,12 +28,27 @@ namespace wheel {
         _switch_to(ev);
         myLogger.info("dispensing winnings");
         std::this_thread::sleep_for(std::chrono::milliseconds(t / 2));
-        for (auto sub_bet : myBets[myWinningNumber]) {
-            double winningAmount = sub_bet.second * 1ll * (MAX_NUM - MIN_NUM);
-            pub_sub::Event winEv { 0, pub_sub::MONEY_WON, "winning-data", myWinningNumber, winningAmount };
-            sub_bet.first->accept(winEv);
+
+        for (auto mp : myBets) {
+            if (mp.first == myWinningNumber) {
+                for (auto sub_bet : mp.second) {
+                    // Inform winners
+                    double winningAmount = sub_bet.second * 1ll * (MAX_NUM - MIN_NUM);
+                    pub_sub::Event winEv { 0, pub_sub::MONEY_WON, "winning-data", myWinningNumber, winningAmount };
+                    sub_bet.first->accept(winEv);
+                    // Bets on winning place is not removed
+                }
+            } else {
+                for (auto sub_bet : mp.second) {
+                    // Inform losers
+                    pub_sub::Event loseEv { 0, pub_sub::MONEY_LOST, "losing-data", mp.first, sub_bet.second };
+                    sub_bet.first->accept(loseEv);
+                    // Clear lost money
+                    sub_bet.second = 0;
+                }
+            }
         }
-        // TODO: For all other who lost, publish event of all the money lost from table for them. (in +ve value)
+
         std::this_thread::sleep_for(std::chrono::milliseconds(t / 2));
         myLogger.info("winnings dispensed");
     }
@@ -51,6 +66,7 @@ namespace wheel {
 
     void Wheel::_start()
     {
+        myLogger.info("Starting thread with ID: ", std::this_thread::get_id());
         while (true) {
             if (!run_loop) {
                 myLogger.debug("run_loop false");

@@ -180,7 +180,20 @@ namespace betting_strategy {
     double Stats::getROIPercentage()
     {
         double moneyNow = getTotalMoney();
-        return (moneyNow / getStartingMoney()) * (double)100;
+        return ((moneyNow - getStartingMoney()) / getStartingMoney()) * (double)100;
+    }
+
+    void Stats::print(int level)
+    {
+        if (level == 0) {
+            std::cout << "Stats: "
+                      << "After starting with " << getStartingMoney() << "rs, "
+                      << "in " << getRoundsPlayed() << " rounds, "
+                      << "we won total of " << getMoneyWon() << ". "
+                      << "With an ROI of " << getROIPercentage() << "% "
+                      << "we are now standing with " << getTotalMoney()
+                      << std::endl;
+        }
     }
 
     // -------------------------------------------------
@@ -188,6 +201,7 @@ namespace betting_strategy {
 
     RecoverBetMoneyStrategy::RecoverBetMoneyStrategy(double start_money)
         : s(start_money)
+        , lastTotalBetAmount(0)
     {
     }
 
@@ -202,12 +216,12 @@ namespace betting_strategy {
         double bet_amount;
 
         // Same number to bet
-        if (s.getRoundsPlayed() == 0) {
+        if (s.getRoundsPlayed() == 0 || s.getTotalBetAmount() == lastTotalBetAmount) {
             number = LUCKY_NUMBER;
             bet_amount = 0.1 * s.getStartingMoney();
         } else {
             number = s.getLastBetNumber();
-            bet_amount = s.getTotalBetAmount() / (double)STRAIGHT_UP_WIN_RETURNS;
+            bet_amount = (s.getTotalBetAmount() - lastTotalBetAmount) / (double)STRAIGHT_UP_WIN_RETURNS;
         }
 
         return { number, bet_amount };
@@ -215,6 +229,9 @@ namespace betting_strategy {
 
     void RecoverBetMoneyStrategy::accept(pub_sub::Event ev)
     {
+        if (ev.event_type == pub_sub::MONEY_WON) {
+            lastTotalBetAmount = s.getTotalBetAmount();
+        }
         s.accept(ev);
     }
 

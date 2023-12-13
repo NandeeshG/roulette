@@ -1,6 +1,7 @@
 #ifndef CASINO_GAMBLER_H
 #define CASINO_GAMBLER_H
 
+#include "betting_strategy.h"
 #include "logger.h"
 #include "pub_sub.h"
 #include "wheel.h"
@@ -15,6 +16,8 @@ namespace gambler {
         wheel::Wheel* myWheel;
         logger::Logger myLogger;
         double myMoney;
+        betting_strategy::Strategy* myStrategy;
+        bool do_auto_betting;
 
         static int GAMBLER_COUNT;
 
@@ -24,9 +27,11 @@ namespace gambler {
         std::string log_prefix(std::string);
 
     public:
-        Gambler(double, wheel::Wheel*);
+        Gambler(betting_strategy::Strategy*, wheel::Wheel*);
         void start_subscription();
         void stop_subscription();
+        void start_auto_betting();
+        void stop_auto_betting();
         void accept(pub_sub::Event e);
 
         /**
@@ -34,6 +39,7 @@ namespace gambler {
          * If amt is <= 0 then any bet placed by this gambler on that number is reset.
          */
         void place_bet(betting_strategy::t_bet);
+        void auto_place_bet();
     };
 
 } // namespace gambler
