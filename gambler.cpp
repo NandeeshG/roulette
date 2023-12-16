@@ -16,7 +16,7 @@ namespace gambler {
         do_auto_betting = false;
         myWheel = wheel;
         myLogger = logger::Logger("Gambler<" + std::to_string(myGamblerID) + ">");
-        myMoney = myStrategy->get_stats().getStartingMoney();
+        myMoney = myStrategy->get_stats().get_starting_money();
         if (myMoney <= 0) {
             myLogger.severe("starting money can't be <= 0, we were given: ", myMoney);
         }
@@ -45,10 +45,10 @@ namespace gambler {
     void Gambler::accept(pub_sub::Event e)
     {
         myStrategy->accept(e);
-        if (e.event_type == pub_sub::MONEY_WON) {
+        if (e.event_type == pub_sub::PLYR_WON) {
             myLogger.debug(log_prefix() + "received event: ", e.to_string());
             account_win(e);
-        } else if (do_auto_betting && e.event_type == pub_sub::BETTING) {
+        } else if (do_auto_betting && e.event_type == pub_sub::BETTING_ON) {
             auto_place_bet();
         } else {
             myLogger.debug(log_prefix() + "received event: ", e.to_string());
@@ -81,7 +81,7 @@ namespace gambler {
             return;
         } else {
             myLogger.warning(log_prefix(), "placing bet on ", bet.first, " with ", bet.second, "rs");
-            myStrategy->accept(pub_sub::Event { 0, pub_sub::BET_PLACED, "", bet.first, bet.second });
+            myStrategy->accept(pub_sub::Event { 0, pub_sub::BET_ACCEPTED, "", bet.first, bet.second });
         }
         myMoney -= amt;
     }

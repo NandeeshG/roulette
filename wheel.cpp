@@ -11,7 +11,7 @@ namespace wheel {
     void Wheel::_rolling()
     {
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + ROLL_TIME_MS / 1000, pub_sub::ROLLING };
+        pub_sub::Event ev { timeNow + ROLL_TIME_MS / 1000, pub_sub::WHEEL_ROLLING };
         _switch_to(ev);
         myLogger.info("starting rolling");
         int t = ROLL_TIME_MS;
@@ -24,7 +24,7 @@ namespace wheel {
     {
         int t = DISPENSE_TIME_MS;
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + DISPENSE_TIME_MS / 1000, pub_sub::DISPENSING, "winning-number in integer-data", myWinningNumber, 0 };
+        pub_sub::Event ev { timeNow + DISPENSE_TIME_MS / 1000, pub_sub::DISTR_WINNINGS, "winning-number in integer-data", myWinningNumber, 0 };
         _switch_to(ev);
         myLogger.info("dispensing winnings");
         std::this_thread::sleep_for(std::chrono::milliseconds(t / 2));
@@ -34,14 +34,14 @@ namespace wheel {
                 for (auto sub_bet : mp.second) {
                     // Inform winners
                     double winningAmount = sub_bet.second * 1ll * (MAX_NUM - MIN_NUM);
-                    pub_sub::Event winEv { 0, pub_sub::MONEY_WON, "winning-data", myWinningNumber, winningAmount };
+                    pub_sub::Event winEv { 0, pub_sub::PLYR_WON, "winning-data", myWinningNumber, winningAmount };
                     sub_bet.first->accept(winEv);
                     // Bets on winning place is not removed
                 }
             } else {
                 for (auto sub_bet : mp.second) {
                     // Inform losers
-                    pub_sub::Event loseEv { 0, pub_sub::MONEY_LOST, "losing-data", mp.first, sub_bet.second };
+                    pub_sub::Event loseEv { 0, pub_sub::PLYR_LOST, "losing-data", mp.first, sub_bet.second };
                     sub_bet.first->accept(loseEv);
                     // Clear lost money
                     sub_bet.second = 0;
@@ -56,7 +56,7 @@ namespace wheel {
     void Wheel::_betting()
     {
         time_t timeNow = time(NULL);
-        pub_sub::Event ev { timeNow + BET_TIME_MS / 1000, pub_sub::BETTING };
+        pub_sub::Event ev { timeNow + BET_TIME_MS / 1000, pub_sub::BETTING_ON };
         int t = BET_TIME_MS;
         _switch_to(ev);
         myLogger.info("betting is open now");
@@ -110,7 +110,7 @@ namespace wheel {
                 return false;
             }
         }
-        if (myCurrentState.event_type != pub_sub::BETTING) {
+        if (myCurrentState.event_type != pub_sub::BETTING_ON) {
             myLogger.warning("can't take bets right now");
             return false;
         }
@@ -142,7 +142,7 @@ namespace wheel {
 
     bool Wheel::taking_bets()
     {
-        return myCurrentState.event_type == pub_sub::BETTING;
+        return myCurrentState.event_type == pub_sub::BETTING_ON;
     }
 
     void Wheel::subscribe(pub_sub::Subscriber* s)

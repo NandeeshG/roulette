@@ -33,5 +33,48 @@ namespace logger {
         { SEVERE, "SEVERE" }
     };
 
+    std::string Logger::getName() const
+    {
+        return myName;
+    }
+
+    void Logger::resetLogLevel()
+    {
+        myUseOverriddenLogLevel = false;
+    }
+
+    void Logger::setLogLevel(LEVEL pLogLevel)
+    {
+        myUseOverriddenLogLevel = true;
+        myOverriddenLogLevel = pLogLevel;
+    }
+
+    std::string Logger::_timestamp_string() const
+    {
+        time_t timeNow = time(NULL);
+        char timeStr[100];
+        strftime(timeStr, sizeof(timeStr), "%Y%m%d:%T:%Z", localtime(&timeNow));
+        return std::string(timeStr);
+    }
+
+    std::string Logger::_colored_string(COLOR color, std::string pStr) const
+    {
+        std::pair<int, int> colorPair;
+        try {
+            colorPair = COLOR_VALUE_MAP.at(color);
+        } catch (std::string err) {
+            return pStr;
+        }
+        return "\033["
+            + std::to_string(colorPair.first)
+            + ";"
+            + std::to_string(colorPair.second)
+            + "m"
+            + pStr
+            + "\033[0m";
+    }
+
+    const Logger logger { "global-logger" };
+
 }
 }

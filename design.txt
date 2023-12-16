@@ -52,11 +52,13 @@ LLD: public interfaces
 
 
 Naming conventions followed:
-1. private variables named in camel case starting with 'my'
-2. static variables named in camel case starting with 'our'
-3. public variables named in camel case
-4. private method names start with '_'
+1. private variables named in snake case starting with '_'
+2. static or public variables named in snake case not starting with '_'
+3. public variables named in camel case and have a verb in their name
+4. private method names start with '_' and have a verb in their name
 5. constant variables in snake case all capitals.
+6. typedef start with 't_'
+7. Class names start with capital letter and are in camel case.
 
 
 Event switching and tasks:

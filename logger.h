@@ -37,33 +37,12 @@ namespace logger {
         bool myUseOverriddenLogLevel;
         LEVEL myOverriddenLogLevel;
 
-        std::string _timestamp_string()
-        {
-            time_t timeNow = time(NULL);
-            char timeStr[100];
-            strftime(timeStr, sizeof(timeStr), "%Y%m%d:%T:%Z", localtime(&timeNow));
-            return std::string(timeStr);
-        }
+        std::string _timestamp_string() const;
 
-        std::string _colored_string(COLOR color, std::string pStr)
-        {
-            std::pair<int, int> colorPair;
-            try {
-                colorPair = COLOR_VALUE_MAP.at(color);
-            } catch (std::string err) {
-                return pStr;
-            }
-            return "\033["
-                + std::to_string(colorPair.first)
-                + ";"
-                + std::to_string(colorPair.second)
-                + "m"
-                + pStr
-                + "\033[0m";
-        }
+        std::string _colored_string(COLOR color, std::string pStr) const;
 
         template <typename... T>
-        void _f_print(std::string pLevel, T... pStrs)
+        void _f_print(std::string pLevel, T... pStrs) const
         {
             std::cout << '[' << _timestamp_string() << ']'
                       << '[' << myName << ']'
@@ -93,24 +72,14 @@ namespace logger {
         {
         }
 
-        std::string getName()
-        {
-            return myName;
-        }
+        std::string getName() const;
 
-        void setLogLevel(LEVEL pLogLevel)
-        {
-            myUseOverriddenLogLevel = true;
-            myOverriddenLogLevel = pLogLevel;
-        }
+        void setLogLevel(LEVEL pLogLevel);
 
-        void resetLogLevel()
-        {
-            myUseOverriddenLogLevel = false;
-        }
+        void resetLogLevel();
 
         template <typename... Args>
-        void log(LEVEL logLevel, Args... pStrs)
+        void log(LEVEL logLevel, Args... pStrs) const
         {
             LEVEL lvlToUse;
             if (myUseOverriddenLogLevel)
@@ -127,43 +96,45 @@ namespace logger {
         }
 
         template <typename... Args>
-        void debug(Args... pStrs)
+        void debug(Args... pStrs) const
         {
             log(DEBUG, pStrs...);
         }
 
         template <typename... Args>
-        void info(Args... pStrs)
+        void info(Args... pStrs) const
         {
             log(INFO, pStrs...);
         }
 
         template <typename... Args>
-        void warning(Args... pStrs)
+        void warning(Args... pStrs) const
         {
             log(WARNING, pStrs...);
         }
 
         template <typename... Args>
-        void error(Args... pStrs)
+        void error(Args... pStrs) const
         {
             log(ERROR, pStrs...);
         }
 
         template <typename... Args>
-        void severe(Args... pStrs)
+        void severe(Args... pStrs) const
         {
             log(SEVERE, pStrs...);
             exit(100 + SEVERE);
         }
 
         template <typename... Args>
-        void severe(int errorCode, Args... pStrs)
+        void severe(int errorCode, Args... pStrs) const
         {
             log(SEVERE, pStrs...);
             exit(errorCode);
         }
     };
+
+    extern const Logger logger;
 
 } // namespace logger
 } // namespace casino

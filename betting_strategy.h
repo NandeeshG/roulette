@@ -10,51 +10,164 @@
 namespace casino {
 namespace betting_strategy {
 
-    typedef std::pair<int, double> t_bet;
-
     template <typename T>
     class LiveStats {
     private:
-        static bool is_even_partition(T);
-        static bool is_positive_partition(T);
+        /**
+         * Partition function to use.
+         */
+        bool (*_partitioner)(T);
 
-        static const int MAX_SIZE = 1000;
-        int vector_ptr = 0;
-        std::unordered_map<T, int> cnt;
+        /**
+         * Aggregating function to use.
+         */
+        double (*_aggregator)(double, T);
 
-        // by default partition is based on positive
-        bool (*partitionBy)(T val);
+        /**
+         * Index of the latest element in history vector.
+         */
+        int _front_idx;
 
-        std::vector<double> partitioned_sum;
+        /**
+         * Size of full list.
+         */
+        int _size;
+
+        /**
+         * The maximum number of stats to keep.
+         */
+        static const int MAX_SIZE = 10000;
+
+        /**
+         * Count of each kind of value.
+         */
+        std::unordered_map<T, int> _value_freq;
+
+        /**
+         * List of MAX_SIZE historical values.
+         */
+        std::vector<T> _historical_values;
+
+        /**
+         * Aggregation of values by the partition.
+         */
+        std::vector<double> _partition_agg;
+
+        double _mean;
+        T _aggregate;
+        T _mode;
+
+        /**
+         * Actual partitioning function for vector types.
+         */
+        static bool _is_even(T, std::true_type);
+        static bool _is_positive(T, std::true_type);
+        static bool _by_threshold(T, long long, std::true_type);
+
+        /**
+         * Actual partitioning function for non-vector types.
+         */
+        static bool _is_even(T, std::false_type);
+        static bool _is_positive(T, std::false_type);
+        static bool _by_threshold(T, long long, std::false_type);
+
+        /**
+         * Actual aggregating functions for vector types.
+         */
+        static double _addition(double, T, std::true_type);
+
+        /**
+         * Actual aggregating functions for non-vector types.
+         */
+        static double _addition(double, T, std::false_type);
 
     public:
-        LiveStats();
-        int generation = 0;
-        std::vector<T> last_1k_values;
-        double mean = 0;
+        /**
+         * Partitioning functions.
+         */
+        static bool is_even(T);
+        static bool is_positive(T);
+        template <long long H>
+        static bool by_threshold(T);
+
+        /**
+         * Aggregating functions.
+         */
+        static double addition(double, T);
+
+        LiveStats(
+            bool (*partitioner)(T) = &is_positive,
+            double (*aggregator)(double, T))
+            = &addition;
+
+        T get_mean();
+
+        T get_mode();
+
+        T get_aggregate();
+
+        /**
+         * Updates the stats with the given value
+         */
+        void update(T);
+
+        /**
+         * Gets the number of times a value appeared
+         */
+        int get_frequency(T val);
+
+        /**
+         * Get the aggregated partition number by member.
+         */
+        double get_aggregated_parition_by_member(T);
+
+        /**
+         * Gets the last iTh value in reverse from historical data.
+         * Default argument 0 gets the last value.
+         * argument 1 gets the second last value.
+         */
+        T get_recent_value(int = 0);
+
+        /**
+         * Gets the current size of stats.
+         */
+        int get_size();
+
         // TODO: Add running median using left maxHeap and right minHeap
         // T median = 0;
-        T mode = 0;
-        T sum = 0;
-        int mode_cnt = 0;
-        void update(T);
-        int count(T val);
-        void setPartitionBy(bool (*func)(T));
-        double getSumOfParitionByMember(T);
-        T getLastValue();
     };
 
     class Stats {
     private:
-        LiveStats<bool> outcomes;
-        LiveStats<double> result_amounts;
-        LiveStats<int> bet_numbers;
-        LiveStats<double> bet_amounts;
-        // money won after placing x bet = x*35
-        // money lost after placing x bet = -x
+        /**
+         * Win or loss outcomes in boolean
+         */
+        LiveStats<bool> _outcomes;
 
-        double starting_money;
-        logger::Logger my_logger;
+        /**
+         * The amount won or lost in that round.
+         * Example, money won after placing x bet = x*35
+         * Example, money lost after placing x bet = -x
+         */
+        LiveStats<double> _result_amounts;
+
+        /**
+         * The numbers bet on in that round.
+         */
+        LiveStats<std::vector<int>> _bet_numbers;
+
+        /**
+         * The amounts bet on in that round.
+         */
+        LiveStats<std::vector<double>> _bet_amounts;
+        static constexpr long long THRESHOLD = 100;
+
+        /**
+         * The starting money with us.
+         */
+        double _starting_money;
+
+        logger::Logger _logger;
 
     public:
         // Initialize Stats with starting money
@@ -62,36 +175,36 @@ namespace betting_strategy {
 
         void accept(pub_sub::Event);
 
-        int getRoundsPlayed();
-        int getWinCount();
-        int getLostCount();
-        double getWinPercentage();
+        int get_rounds_played();
+        int get_win_count();
+        int get_lost_count();
+        double get_win_percentage();
 
         /**
          * First is the most bet number
          * Second is the number of times it was bet
          */
-        std::pair<int, int> getMostBetNumber();
-        double getAverageBetNumber();
-        int getLastBetNumber();
+        std::pair<int, int> get_most_bet_number();
+        double get_average_bet_number();
+        int get_last_bet_number();
 
-        double getTotalBetAmount();
-        double getLastBetMoney();
+        double get_total_bet_amount();
+        double get_last_bet_money();
 
         /**
          * First is the most bet amount
          * Second is the number of times it was bet
          */
-        std::pair<double, int> getMostBetAmount();
-        double getAverageBetAmount();
+        std::pair<double, int> get_most_bet_amount();
+        double get_average_bet_amount();
 
-        double getMoneyDeltaFromStart();
-        double getMoneyWon();
-        double getMoneyLost();
+        double get_money_delta_from_start();
+        double get_money_won();
+        double get_money_lost();
 
-        double getStartingMoney();
-        double getTotalMoney();
-        double getROIPercentage();
+        double get_starting_money();
+        double get_total_money();
+        double get_roi_percentage();
 
         void print(int lvl = 0);
     };
